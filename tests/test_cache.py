@@ -41,3 +41,11 @@ def test_geocode_camera_cache_miss():
         assert res["longitude"] == -93.0
         assert cache["uri1"] == (45.0, -93.0)
         mock_geocode.assert_called_once_with("Roadway 1")
+
+def test_save_csv_cache_triggers_git():
+    from scrape_cameras import save_csv_cache
+    cache = {"uri1": (45.0, -93.0)}
+    with patch("scrape_cameras.trigger_git_push") as mock_git_push:
+        save_csv_cache(cache, "geocoding_cache.csv")
+        mock_git_push.assert_called_once_with("geocoding_cache.csv")
+

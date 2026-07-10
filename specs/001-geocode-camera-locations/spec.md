@@ -22,6 +22,10 @@
 - Q: Should we switch to geopy async mode? → A: No, retain multi-threaded execution model with rate-limiting locks to comply with the 1 req/sec Nominatim policy.
 - Q: Should we adopt MiniHuey for task scheduling and throttling? → A: No, stick to the simple thread pool and rate-limiting locks to avoid task queue dependency overhead.
 - Q: Should cache matching rely strictly on URI even if camera titles change? → A: Yes, always check by unique URI and skip geocoding if it exists in the cache, ignoring text details.
+- Q: Should geocoding cache changes be committed and pushed to Git during runtime? → A: Yes, execute git add, git commit with message suffix [skip ci], and git push via subprocess when periodic flushes occur.
+- Q: How should GitHub Actions handle geocoding cache pushes? → A: Use an always() push step in update_cameras.yml to commit and push both geocoding_cache.csv and mn_cameras.csv even if the scraping task fails or gets cancelled.
+
+
 
 
 
@@ -80,6 +84,8 @@ As a system operator, I want geocoding results to be cached directly in a separa
 - **FR-011**: The system MUST periodically save the cached dataset to `geocoding_cache.csv` after every 50 camera locations are successfully geocoded to allow resuming if interrupted.
 - **FR-012**: The system MUST merge the cache coordinates with the fetched camera views and output the final combined data to `mn_cameras.csv` using pandas at the end of the run.
 - **FR-013**: The system MUST configure the geopy Nominatim client with a descriptive User-Agent constructor parameter and specify timeout parameters cleanly.
+- **FR-014**: The system MUST stage, commit, and push `geocoding_cache.csv` to git during runtime when periodic flushes occur, using the commit message suffix `[skip ci]` to prevent triggering recursive CI pipelines.
+- **FR-015**: The system MUST commit and push both `geocoding_cache.csv` and `mn_cameras.csv` using an `if: always()` post-execution step in `.github/workflows/update_cameras.yml`.
 
 ### Key Entities *(include if feature involves data)*
 

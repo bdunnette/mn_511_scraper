@@ -7,6 +7,7 @@ import os
 import time
 import datetime
 import threading
+import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 from geopy.geocoders import Nominatim
@@ -164,6 +165,32 @@ def load_csv_cache(filename="geocoding_cache.csv"):
         logging.warning(f"Failed to load CSV cache from '{filename}': {e}. Starting with an empty cache.")
     return {}
 
+def trigger_git_push(filename):
+    try:
+        # 1. Add file to staging
+        subprocess.run(["git", "add", filename], check=True, capture_output=True, text=True)
+        
+        # 2. Check if there are differences staged
+        diff_res = subprocess.run(["git", "diff", "--staged", "--quiet"], capture_output=True)
+        if diff_res.returncode == 0:
+            return
+            
+        # 3. Commit staged changes with [skip ci]
+        commit_msg = "chore: update geocoding cache [automated] [skip ci]"
+        subprocess.run(["git", "commit", "-m", commit_msg], check=True, capture_output=True, text=True)
+        
+        # 4. Push to origin branch
+        branch_res = subprocess.run(["git", "branch", "--show-current"], check=True, capture_output=True, text=True)
+        branch_name = branch_res.stdout.strip()
+        if branch_name:
+            logging.info(f"Pushing geocoding cache changes to Git branch '{branch_name}'...")
+            subprocess.run(["git", "push", "origin", branch_name], check=True, capture_output=True, text=True)
+            logging.info("Successfully pushed geocoding cache to Git.")
+    except subprocess.CalledProcessError as e:
+        logging.warning(f"Failed to push geocoding cache to Git: {e.stderr.strip() if e.stderr else e}")
+    except Exception as e:
+        logging.warning(f"Error during runtime Git synchronization: {e}")
+
 def save_csv_cache(cache, filename="geocoding_cache.csv"):
     rows = []
     for uri, (lat, lon) in cache.items():
@@ -172,6 +199,8 @@ def save_csv_cache(cache, filename="geocoding_cache.csv"):
         df = pd.DataFrame(rows)
         with csv_write_lock:
             df.to_csv(filename, index=False, encoding='utf-8')
+            if filename == "geocoding_cache.csv":
+                trigger_git_push(filename)
     except Exception as e:
         logging.error(f"Failed to save CSV cache to '{filename}': {e}")
 

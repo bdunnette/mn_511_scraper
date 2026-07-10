@@ -22,7 +22,7 @@
 
 ### 3. Concurrency & Periodic Saving
 - **Strategy**: Implement a global `threading.Lock` protecting Nominatim search API calls and another lock protecting `geocoding_cache.csv` file writes. Each cache miss will acquire the rate-limiting lock, wait for the global throttling interval (at least 1.0 second since the last request), and fire.
-- **Resumability**: To prevent losing geocoding progress if execution is interrupted, the threads will trigger a thread-safe cache write to `geocoding_cache.csv` after every 50 newly geocoded items.
+- **Resumability**: To prevent losing geocoding progress if execution is interrupted, the threads will trigger a thread-safe cache write to `geocoding_cache.csv` after every 50 newly geocoded items. Upon file save, a thread-safe subprocess command block stages, commits (`[skip ci]` suffix in message), and pushes `geocoding_cache.csv` to the Git repository.
 - **Progress Reporting**: `tqdm` library is utilized to render a dynamic thread-safe progress bar. At the end of the run, pandas merges cache coordinates into the main camera dataframe and outputs it to `mn_cameras.csv`.
 
 

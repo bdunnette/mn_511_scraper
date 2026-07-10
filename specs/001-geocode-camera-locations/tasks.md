@@ -69,6 +69,7 @@
 - [X] T016 [US2] Update geocoding workflow to perform cache lookups by URI from geocoding_cache.csv before calling external geopy geocoding client in scrape_cameras.py
 - [X] T017 [US2] Implement thread-safe periodic flushing of newly geocoded coordinates to geocoding_cache.csv every 50 records in scrape_cameras.py
 - [X] T018 [US2] Implement final merge of cached coordinates from geocoding_cache.csv into fetched camera views before saving to mn_cameras.csv in scrape_cameras.py
+- [X] T021 [US2] Implement subprocess git commit and push logic for geocoding_cache.csv during runtime flushes in scrape_cameras.py
 
 **Checkpoint**: User Stories 1 and 2 work together. Coordinates are cached in a separate CSV file and committed, and subsequent runs read from the cache file instantly.
 
@@ -80,6 +81,7 @@
 
 - [X] T019 Update README.md with geocoding setup, concurrency, and caching info
 - [X] T020 Run the validation scenarios in specs/001-geocode-camera-locations/quickstart.md
+- [X] T022 Update GitHub Actions workflow .github/workflows/update_cameras.yml to push both cache and camera data always on termination
 
 ---
 

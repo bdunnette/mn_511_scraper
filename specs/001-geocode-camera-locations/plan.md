@@ -8,13 +8,13 @@
 
 ## Summary
 
-The goal of this feature is to resolve and append geographic coordinates (latitude and longitude) to the scraped camera listings in the output CSV file (`mn_cameras.csv`). To optimize performance and ensure resiliency, a separate cache CSV file (`geocoding_cache.csv`) acts as the geocoding database. Geocoding queries are executed using the `geopy` library interface to Nominatim. Existing locations are loaded at startup by unique `URI` to skip already geocoded cameras. Cache results are periodically written back to the separate cache CSV (every 50 geocodes) to support resumption, and merged into the main camera dataframe at the end of the run.
+The goal of this feature is to resolve and append geographic coordinates (latitude and longitude) to the scraped camera listings in the output CSV file (`mn_cameras.csv`). To optimize performance and ensure resiliency, a separate cache CSV file (`geocoding_cache.csv`) acts as the geocoding database. Geocoding queries are executed using the `geopy` library interface to Nominatim. Existing locations are loaded at startup by unique `URI` to skip already geocoded cameras. Cache results are periodically written back to the separate cache CSV (every 50 geocodes) to support resumption, and staged, committed, and pushed to git using the subprocess module. Furthermore, a daily GitHub Actions workflow commits and pushes the cache file always upon termination (success, fail, or cancellation).
 
 ## Technical Context
 
 **Language/Version**: Python 3.13
 
-**Primary Dependencies**: `requests` (for GraphQL fetch), `geopy` (for Nominatim queries), `pandas` (for parsing, filtering, merging, and flushing CSV data), `tqdm` (for geocoding progress bar visualization)
+**Primary Dependencies**: `requests` (for GraphQL fetch), `geopy` (for Nominatim queries), `pandas` (for parsing, filtering, merging, and flushing CSV data), `tqdm` (for geocoding progress bar visualization), `git` CLI (for runtime cache synchronization), GitHub Actions Runner (for daily runs)
 
 **Storage**: Separate local CSV file (`geocoding_cache.csv`) for cache; final local CSV file (`mn_cameras.csv`) for merged output.
 
@@ -26,7 +26,7 @@ The goal of this feature is to resolve and append geographic coordinates (latitu
 
 **Performance Goals**: Cached runs must bypass external API queries and complete in under 10 seconds. Geocoding processing leverages threading to perform cache checks and concurrent lookups efficiently.
 
-**Constraints**: Adhere strictly to the OpenStreetMap Nominatim usage policy (max 1 request per second globally; custom user-agent identification). Use thread-safe global locks to throttle concurrent threads and protect periodic file flushes to `geocoding_cache.csv`.
+**Constraints**: Adhere strictly to the OpenStreetMap Nominatim usage policy (max 1 request per second globally; custom user-agent identification). Use thread-safe global locks to throttle concurrent threads, protect periodic file flushes to `geocoding_cache.csv`, and guard runtime git commit/push operations.
 
 **Scale/Scope**: ~2,000 camera locations retrieved via the Minnesota 511 GraphQL endpoint.
 
@@ -56,6 +56,9 @@ specs/001-geocode-camera-locations/
 
 ```text
 .
+├── .github/
+│   └── workflows/
+│       └── update_cameras.yml
 ├── .specify/
 ├── specs/
 │   └── 001-geocode-camera-locations/
